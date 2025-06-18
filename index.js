@@ -90,9 +90,17 @@ app.get("/redirect", async (req, res) => {
       <code>${pageAccessToken}</code>
     `);
   } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.send("❌ Lỗi khi xử lý OAuth.");
+  console.error("❌ Chi tiết lỗi OAuth:");
+  if (error.response) {
+    console.error("Status:", error.response.status);
+    console.error("Data:", error.response.data);
+    res.send(`<pre>Lỗi Facebook trả về:\n${JSON.stringify(error.response.data, null, 2)}</pre>`);
+  } else {
+    console.error("Message:", error.message);
+    res.send(`<pre>Lỗi không xác định:\n${error.message}</pre>`);
   }
+}
+
 });
 
 app.listen(PORT, () => {
