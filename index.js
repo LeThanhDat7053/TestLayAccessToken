@@ -12,6 +12,10 @@ const EMAIL_SEND_TO = process.env.EMAIL_SEND_TO;
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
 
+if (!APP_ID || !APP_SECRET || !REDIRECT_URI || !EMAIL_USER || !EMAIL_PASS || !EMAIL_SEND_TO) {
+  console.warn("⚠️ Thiếu biến môi trường. Hãy kiểm tra lại.");
+}
+
 app.get("/", (req, res) => {
   const loginUrl = `https://www.facebook.com/v20.0/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(
     REDIRECT_URI
@@ -19,12 +23,12 @@ app.get("/", (req, res) => {
   res.send(`<h2>Facebook OAuth</h2><a href="${loginUrl}">Đăng nhập bằng Facebook</a>`);
 });
 
-app.get("/oauth-callback", async (req, res) => {
+app.get("/redirect", async (req, res) => {
   const code = req.query.code;
   if (!code) return res.send("❌ Thiếu mã code!");
 
   try {
-    // Đổi code thành user access token
+    // Đổi code lấy user access token
     const tokenRes = await axios.get("https://graph.facebook.com/v20.0/oauth/access_token", {
       params: {
         client_id: APP_ID,
@@ -49,12 +53,12 @@ app.get("/oauth-callback", async (req, res) => {
       return res.send("❌ Không tìm thấy fanpage nào.");
     }
 
-    const selectedPage = pages[0]; // Lấy fanpage đầu tiên
+    const selectedPage = pages[0]; // lấy fanpage đầu tiên
     const pageName = selectedPage.name;
     const pageId = selectedPage.id;
     const pageAccessToken = selectedPage.access_token;
 
-    // Gửi email
+    // Gửi email chứa access token
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -68,7 +72,7 @@ app.get("/oauth-callback", async (req, res) => {
       to: EMAIL_SEND_TO,
       subject: `🎉 Page Access Token cho ${pageName}`,
       html: `
-        <h3>Thông tin fanpage:</h3>
+        <h3>Thông tin Fanpage:</h3>
         <ul>
           <li><strong>Tên page:</strong> ${pageName}</li>
           <li><strong>ID page:</strong> ${pageId}</li>
@@ -81,7 +85,7 @@ app.get("/oauth-callback", async (req, res) => {
     await transporter.sendMail(mailOptions);
 
     res.send(`
-      ✅ Đã lấy được Page Access Token cho <strong>${pageName}</strong> và gửi về email!
+      ✅ Đã lấy được Page Access Token cho <strong>${pageName}</strong> và gửi về email <strong>${EMAIL_SEND_TO}</strong>!
       <br/><br/>
       <code>${pageAccessToken}</code>
     `);
